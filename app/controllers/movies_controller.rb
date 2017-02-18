@@ -12,21 +12,44 @@ class MoviesController < ApplicationController
 
   def index
     @all_ratings = Movie.getRatings
- 
-    if (params[:ratings] != nil)
-      @ratings_selected = params[:ratings].keys
-    else
-      @ratings_selected = @all_ratings
+    
+    if params[:ratings] == nil
+      if session[:ratings] != nil
+        params[:ratings] = session[:ratings]
+        flash.keep
+        redirect_to movies_path(:sort => params[:sort], :ratings => session[:ratings])  
+        return
+      else
+        #need to keep the structure as a hash or else .keys wont work
+        params[:ratings] = Hash[@all_ratings.map {|x| [x, 1]}]
+        flash.keep
+        redirect_to movies_path(:sort => params[:sort], :ratings =>params[:ratings])  
+        return
+      end
     end
+
+    if params[:sort] == nil
+      if session[:sort] != nil
+        params[:sort] = session[:sort]
+        flash.keep
+        redirect_to movies_path(:sort => session[:sort], :ratings => params[:ratings])  
+        return
+      end
+    end
+
+    #must have ratings
+    @ratings_selected = params[:ratings].keys
+    session[:ratings] = params[:ratings]
 
     @movies = Movie.where(:rating => @ratings_selected)
 
     if params[:sort] == 'title'
-      @movies = Movie.order(:title)
+      @movies = @movies.order(:title)
+      session[:sort] = 'title'
     elsif params[:sort] == 'release_date'
-      @movies = Movie.order(:release_date)
+      @movies = @movies.order(:release_date)
+      session[:sort] = 'release_date'
     end
-    
   end
 
   def new
